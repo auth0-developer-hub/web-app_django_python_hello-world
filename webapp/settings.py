@@ -9,12 +9,21 @@ https://docs.djangoproject.com/en/4.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
+import environ
 import os
 from pathlib import Path
+
+env = environ.Env(
+    # set casting, default value
+    DEBUG=(bool, True)
+)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 TEMPLATE_DIR = os.path.join(BASE_DIR, "webapp", "templates")
+
+# Take environment variables from .env file
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
@@ -23,7 +32,7 @@ TEMPLATE_DIR = os.path.join(BASE_DIR, "webapp", "templates")
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env('DEBUG')
 
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
@@ -121,3 +130,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'webapp/static'),
 ]
+
+AUTH0_DOMAIN = env('AUTH0_DOMAIN')
+AUTH0_CLIENT_ID = env('AUTH0_CLIENT_ID')
+AUTH0_CLIENT_SECRET = env('AUTH0_CLIENT_SECRET')
+
+LOGIN_URL = '/login'
+
+AUTHENTICATION_BACKENDS = ['webapp.auth0_backend.Auth0Backend']

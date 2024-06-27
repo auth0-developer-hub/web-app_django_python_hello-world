@@ -1,7 +1,3 @@
-import json
-from urllib import request
-
-
 class Profile:
     nickname: str
     name: str
@@ -10,7 +6,6 @@ class Profile:
     email: str
     email_verified: bool
     sub: str
-    pretty_json: str
 
     def __init__(self,
                  nickname: str,
@@ -20,7 +15,7 @@ class Profile:
                  email: str,
                  email_verified: bool,
                  sub: str
-    ):
+                 ):
         self.nickname = nickname
         self.name = name
         self.picture = picture

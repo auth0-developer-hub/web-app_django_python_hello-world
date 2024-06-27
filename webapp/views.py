@@ -1,8 +1,69 @@
 from django.http import HttpResponse
 from django.template import loader
+from django.conf import settings
+from django.shortcuts import redirect
+from django.urls import reverse
+from django.contrib import auth
+from authlib.integrations.django_client import OAuth
+from urllib.parse import quote_plus, urlencode
+from django.contrib.auth.decorators import login_required
 
 from .models import Profile
 from .services.message_service import MessageService
+
+oauth = OAuth()
+
+oauth.register(
+    "auth0",
+    client_id=settings.AUTH0_CLIENT_ID,
+    client_secret=settings.AUTH0_CLIENT_SECRET,
+    client_kwargs={
+        "scope": "openid profile email",
+    },
+    server_metadata_url=f"https://{settings.AUTH0_DOMAIN}/.well-known/openid-configuration",
+)
+
+
+def login(request):
+    return oauth.auth0.authorize_redirect(
+        request,
+        request.build_absolute_uri(reverse("callback")),
+    )
+
+
+def signup(request):
+    return oauth.auth0.authorize_redirect(
+        request,
+        request.build_absolute_uri(reverse("callback")),
+        screen_hint="signup"
+    )
+
+
+def callback(request):
+    token = oauth.auth0.authorize_access_token(request)
+
+    user = auth.authenticate(request, token=token)
+
+    if user:
+        auth.login(request, user)
+        return redirect(request.build_absolute_uri(reverse("profile")))
+
+    return HttpResponse(status=400)
+
+
+def logout(request):
+    request.session.clear()
+
+    return redirect(
+        f"https://{settings.AUTH0_DOMAIN}/v2/logout?"
+        + urlencode(
+            {
+                "returnTo": request.build_absolute_uri(reverse("index")),
+                "client_id": settings.AUTH0_CLIENT_ID,
+            },
+            quote_via=quote_plus,
+        ),
+    )
 
 
 def index(request):
@@ -46,17 +107,19 @@ def index(request):
     return HttpResponse(template.render(context, request))
 
 
+@login_required
 def profile(request):
     template = loader.get_template('profile/index.html')
+    user = request.session.get('user').get('userinfo')
 
     user_profile = Profile(
-        nickname="Customer",
-        name="One Customer",
-        picture="https://cdn.auth0.com/blog/hello-auth0/auth0-user.png",
-        updated_at="2021-05-04T21:33:09.415Z",
-        email="customer@example.com",
-        email_verified=False,
-        sub="auth0|12345678901234567890"
+        nickname=user.get('nickname'),
+        name=user.get('name'),
+        picture=user.get('picture'),
+        updated_at=user.get('updated_at'),
+        email=user.get('email'),
+        email_verified=user.get('email_verified'),
+        sub=user.get('sub')
     )
 
     context = {
@@ -74,6 +137,7 @@ def public(request):
     return HttpResponse(template.render(context, request))
 
 
+@login_required
 def protected(request):
     template = loader.get_template('protected/index.html')
     context = {
@@ -82,6 +146,7 @@ def protected(request):
     return HttpResponse(template.render(context, request))
 
 
+@login_required
 def admin(request):
     template = loader.get_template('admin/index.html')
     context = {

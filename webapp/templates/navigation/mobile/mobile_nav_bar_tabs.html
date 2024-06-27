@@ -1,6 +1,8 @@
 <div class="mobile-nav-bar__tabs">
   {% include "./mobile_nav_bar_tab.html" with label="Profile" path="/profile" %}
   {% include "./mobile_nav_bar_tab.html" with label="Public" path="/public" %}
+  {% if request.session.user %}
   {% include "./mobile_nav_bar_tab.html" with label="Protected" path="/protected" %}
   {% include "./mobile_nav_bar_tab.html" with label="Admin" path="/admin" %}
+  {% endif %}
 </div>
