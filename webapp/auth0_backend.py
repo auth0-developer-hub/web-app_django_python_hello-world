@@ -20,8 +20,10 @@ class Auth0Backend(BaseBackend):
 
         try:
             user = User.objects.get(username=username)
+            user.is_staff = True
+            user.save()
         except User.DoesNotExist:
-            user = User(username=username)
+            user = User(username=username, is_staff=True)
             user.save()
 
         return user

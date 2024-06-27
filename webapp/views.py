@@ -7,6 +7,7 @@ from django.contrib import auth
 from authlib.integrations.django_client import OAuth
 from urllib.parse import quote_plus, urlencode
 from django.contrib.auth.decorators import login_required
+import json
 
 from .models import Profile
 from .services.message_service import MessageService
@@ -18,7 +19,7 @@ oauth.register(
     client_id=settings.AUTH0_CLIENT_ID,
     client_secret=settings.AUTH0_CLIENT_SECRET,
     client_kwargs={
-        "scope": "openid profile email",
+        "scope": "openid profile email"
     },
     server_metadata_url=f"https://{settings.AUTH0_DOMAIN}/.well-known/openid-configuration",
 )
@@ -28,6 +29,7 @@ def login(request):
     return oauth.auth0.authorize_redirect(
         request,
         request.build_absolute_uri(reverse("callback")),
+        audience=settings.AUTH0_AUDIENCE,
     )
 
 
@@ -140,8 +142,10 @@ def public(request):
 @login_required
 def protected(request):
     template = loader.get_template('protected/index.html')
+    access_token = request.session.get('user').get('access_token')
+
     context = {
-        "message": MessageService().protected_message()
+        "message": MessageService().protected_message(access_token)
     }
     return HttpResponse(template.render(context, request))
 
@@ -149,8 +153,10 @@ def protected(request):
 @login_required
 def admin(request):
     template = loader.get_template('admin/index.html')
+    access_token = request.session.get('user').get('access_token')
+
     context = {
-        "message": MessageService().admin_message()
+        "message": MessageService().admin_message(access_token)
     }
     return HttpResponse(template.render(context, request))
 
